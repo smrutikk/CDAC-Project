@@ -1,0 +1,26 @@
+# database-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      nodeSelector:          # <-- ADD THIS
+        tier: database       # <-- matches the label on your database worker node
+      containers:
+        - name: database
+          image: postgres:15         # or mysql, mongo, etc.
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "yourpassword"

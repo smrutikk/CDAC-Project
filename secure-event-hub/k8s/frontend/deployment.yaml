@@ -1,0 +1,23 @@
+# frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      nodeSelector:          # <-- ADD THIS
+        tier: frontend       # <-- matches the label on your frontend worker node
+      containers:
+        - name: frontend
+          image: sampadasupriya/secure-event-client:v3-fixed
+          ports:
+            - containerPort: 80

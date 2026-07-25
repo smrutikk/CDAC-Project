@@ -1,0 +1,54 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_USER    = 'sampadasupriya'
+        BACKEND_IMAGE  = 'sampadasupriya/secure-event-server:v2-fixed'
+        FRONTEND_IMAGE = 'sampadasupriya/secure-event-client:v3-fixed'
+        CLUSTER_NAME   = 'kind-my-cluster'
+    }
+
+    stages {
+        stage('1. Checkout Source Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('2. Build Docker Images') {
+            steps {
+                echo 'Building Frontend and Backend Docker Images...'
+                sh 'docker build -t $BACKEND_IMAGE ./event-management-platform/server'
+                sh 'docker build -t $FRONTEND_IMAGE ./event-management-platform/client'
+            }
+        }
+
+        stage('3. Security Scan (Trivy)') {
+            steps {
+                echo 'Scanning Images for Vulnerabilities...'
+                sh 'trivy image --severity HIGH,CRITICAL $BACKEND_IMAGE || true'
+                sh 'trivy image --severity HIGH,CRITICAL $FRONTEND_IMAGE || true'
+            }
+        }
+
+        stage('4. Push to Docker Hub') {
+            steps {
+                echo 'Pushing Docker Images to Registry...'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'docker push $BACKEND_IMAGE'
+                    sh 'docker push $FRONTEND_IMAGE'
+                }
+            }
+        }
+
+        stage('5. Deploy to Kind Kubernetes Cluster') {
+            steps {
+                echo 'Applying Manifests from k8s/dev and Triggering K8s Rollout...'
+                sh 'kubectl apply -f k8s/dev/ --context $CLUSTER_NAME'
+                sh 'kubectl rollout restart deployment/backend-deployment --context $CLUSTER_NAME'
+                sh 'kubectl rollout restart deployment/frontend-deployment --context $CLUSTER_NAME'
+            }
+        }
+    }
+}

@@ -1,0 +1,24 @@
+# backend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      nodeSelector:
+        tier: backend
+      containers:
+        - name: backend
+          # UPDATE THIS: Replace 'YOUR_DOCKERHUB_USERNAME' with your actual username
+          image: sampadasupriya/secure-event-server:v2-fixed 
+          ports:
+            - containerPort: 5000

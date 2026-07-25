@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  server:
+    build: ./server
+    container_name: eventmgmt-server
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - SECRET_KEY=devsecops-demo-secret
+      - JWT_SECRET_KEY=devsecops-demo-jwt
+    volumes:
+      - ./server:/app
+
+  client:
+    build: ./client
+    container_name: eventmgmt-client
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    depends_on:
+      - server
+    volumes:
+      - ./client:/app
+      - /app/node_modules
